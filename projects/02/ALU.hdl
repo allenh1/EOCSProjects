@@ -42,5 +42,25 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+    Not16(in=x, out=notx); //compute !x
+    Not16(in=y, out=noty); //compute !y
+
+    //Mux it up! Figure out whether to select !x or x, and that for y.
+    Mux4Way16(a=x, b=false, c=notx, d=true, sel[0]=zx, sel[1]=nx, out=xx);
+    Mux4Way16(a=y, b=false, c=noty, d=true, sel[0]=zy, sel[1]=ny, out=yy);
+
+    //Add, and, and mux to select.
+    Add16(a=xx, b=yy, out=xpy);
+    And16(a=xx, b=yy, out=xandy);
+    Mux16(a=xandy, b=xpy, sel=f, out=evaluated);
+
+    //Select the answer. We also store the outs to figure out if x is zero.
+    Not16(in=evaluated, out=nevaluated);
+    Mux16(a=evaluated, b=nevaluated, sel=no, out=out, out[0..7]=out1, out[8..15]=out2, out[15]=ng);
+
+    //Check x is nonzero, set zr.
+    Or8Way(in=out1, out=first8);
+    Or8Way(in=out2, out=secnd8);
+    Or(a=first8, b=secnd8, out=hasOnes);
+    Xor(a=hasOnes, b=true, out=zr);
 }
