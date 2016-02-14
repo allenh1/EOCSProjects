@@ -9,3 +9,50 @@
 // program clears the screen, i.e. writes "white" in every pixel.
 
 // Put your code here.
+	@SCREEN
+	M=0
+(KEYCHECK)
+	@24576
+	D=M
+	@SETBLACK
+	D; JGT
+(SETWHITE)
+	@R3
+	M=0
+	@COLORIZE
+	0; JMP
+(SETBLACK)
+	@R3
+	M=-1
+	@COLORIZE
+	0; JMP
+(COLORIZE)
+	@R3
+	D=M
+	@SCREEN
+	M=D
+	@SCREEN
+	D=A
+	@R1
+	M=D
+(LOOOP)
+	@R3
+	D=M
+	@R1
+	A=M
+	M=D
+	D=M
+	@SCREEN
+    D=D+M
+	@24575  // If we have reached the end, then jump.
+	D=D-A
+	@KEYCHECK
+	D; JEQ
+	@R1
+	D=M
+	@1
+	D=D+A
+	@R1
+	M=D
+	@LOOOP
+	0;JMP

@@ -39,5 +39,46 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // Decipher the instruction
+    Not(in=instruction[15], out=AType);
+    Not(in=AType, out=CType);
+
+    And(a=CType, b=instruction[5], out=ALUtoAReg);
+    Mux16(a=instruction, b=ALUOutput, sel=ALUtoAReg, out=ARegInput);
+
+    // Set load if A type or if ALU is outputting to AReg.
+    Or(a=AType, b=ALUtoAReg, out=loadAReg);
+
+    // Read the ARegister's value.
+    ARegister(in=ARegInput, load=loadAReg, out=ARegOut);
+
+    //Use the a-bit to select A or M
+    Mux16(a=ARegOut, b=inM, sel=instruction[12], out=AMuxOut);
+
+    // Now we parse info for the DRegister.
+    // Only load DRegister if we are computing and
+    // the instruction involves the DRegister.
+    And(a=CType, b=instruction[4], out=loadDReg);
+    DRegister(in=ALUOutput, load=loadDReg, out=DRegOut);
+
+    ALU(x=DRegOut, y=AMuxOut, zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8], f=instruction[7],
+        no=instruction[6], out=ALUOutput, zr=ZeroOut, ng=NGout);
+
+    // Write Memory?
+    And16(a=true, b=ARegOut, out[0..14]=addressM);
+    And16(a=true, b=ALUOutput, out=outM);
+    And(a=CType, b=instruction[3], out=writeM);
+
+    // Should we branch?
+    And(a=ZeroOut, b=instruction[1], out=jeq); // If zero, jump.
+    And(a=NGout, b=instruction[2], out=jlt);   // is negative, jmp.
+    Or(a=ZeroOut, b=NGout, out=leqZero);
+    Not(in=leqZero, out=gtZero);
+    And(a=gtZero, b=instruction[0], out=jgt); // Jmp, cause > 0
+    Or(a=jeq, b=jlt, out=jle);
+    Or(a=jle, b=jgt, out=jmpToA);
+    And(a=CType, b=jmpToA, out=PCLoad);        // jump if C instruction.
+    Not(in=PCLoad, out=PCInc);
+    PC(in=ARegOut, inc=PCInc, load=PCLoad, reset=reset, out[0..14]=pc);
 }

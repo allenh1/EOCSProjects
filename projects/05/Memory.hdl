@@ -27,5 +27,16 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // Figure out where the load bit should be passed via the input address.
+    DMux4Way(in=load, sel=address[13..14], a=rama, b=ramb, c=screenload, d=keyload);
+    // As this is divided into sections of 8K, we need to check RAM twice.
+    Or(a=rama, b=ramb, out=ramload);
+
+    // Pass the load bit and read/set addresses.
+    RAM16K(in=in, load=ramload, address=address[0..13], out=outram);
+    Screen(in=in, load=screenload, address=address[0..12], out=outscreen);
+    Keyboard(out=outkey);
+
+    // Output the correct address' value.
+    Mux4Way16(a=outram, b=outram, c=outscreen, d=outkey, sel=address[13..14], out=out);
 }
